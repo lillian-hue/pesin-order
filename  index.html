@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>佩森肉舖 訂購單系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --dark: #1A0A00;
+  --brown: #5C2D0A;
+  --gold: #C8962E;
+  --gold-light: #E8B84B;
+  --cream: #FAF5EC;
+  --cream-dark: #F0E8D8;
+  --border: #D4B896;
+  --gray: #8A7A6A;
+  --green: #1A5C2A;
+  --red: #8B1A1A;
+  --white: #FFFFFF;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--dark);
+  min-height: 100vh;
+  color: var(--dark);
+}
+
+/* ── HEADER ── */
+.app-header {
+  background: linear-gradient(135deg, #1A0A00 0%, #3E1800 50%, #1A0A00 100%);
+  padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--gold);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-name { font-family: 'Noto Serif TC', serif; font-size: 20px; font-weight: 700; color: var(--gold); letter-spacing: 3px; }
+.brand-sub { font-size: 10px; color: rgba(200,150,46,0.6); letter-spacing: 2px; }
+.header-badge { background: rgba(200,150,46,0.15); border: 1px solid var(--gold); border-radius: 4px; padding: 4px 12px; font-size: 11px; color: var(--gold); letter-spacing: 1px; }
+
+/* ── LAYOUT ── */
+.app-body { display: grid; grid-template-columns: 420px 1fr; min-height: calc(100vh - 60px); }
+@media(max-width:900px) { .app-body { grid-template-columns: 1fr; display: flex; flex-direction: column; } }
+
+/* ── LEFT PANEL ── */
+.left-panel { background: var(--cream); overflow-y: auto; max-height: calc(100vh - 60px); }
+@media(max-width:900px) { .left-panel { max-height: none; overflow-y: visible; } }
+.section { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.section-title {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 12px; font-weight: 600; color: var(--brown);
+  letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* SALES SELECTOR */
+.sales-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.sales-btn {
+  padding: 10px 8px; border: 1.5px solid var(--border);
+  border-radius: 6px; background: white; cursor: pointer;
+  text-align: center; transition: all .2s;
+}
+.sales-btn:hover { border-color: var(--gold); }
+.sales-btn.active { border-color: var(--brown); background: #FDF5E8; }
+.sales-btn .code { font-size: 16px; font-weight: 700; color: var(--brown); font-family: 'Noto Serif TC', serif; }
+.sales-btn .name { font-size: 10px; color: var(--gray); margin-top: 2px; }
+
+/* FORM */
+label { display: block; font-size: 11px; color: var(--gray); margin-bottom: 3px; font-weight: 500; }
+input, select, textarea {
+  width: 100%; padding: 8px 10px; font-size: 13px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: white; font-family: 'Noto Sans TC', sans-serif;
+  color: var(--dark); outline: none; transition: border-color .15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+textarea { resize: vertical; min-height: 56px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.form-row.full { grid-template-columns: 1fr; }
+.form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+
+/* CLIENT SELECTOR */
+.client-select-wrap { position: relative; }
+.client-loading { font-size: 11px; color: var(--gray); padding: 4px 0; }
+
+/* PRODUCTS */
+.product-search { margin-bottom: 10px; }
+.cat-label {
+  font-size: 10px; font-weight: 700; color: var(--gold);
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 6px 0 4px; border-top: 1px solid var(--border);
+  margin-top: 6px;
+}
+.product-list { max-height: 320px; overflow-y: auto; padding-right: 2px; }
+.product-list::-webkit-scrollbar { width: 3px; }
+.product-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.product-item {
+  display: grid; grid-template-columns: 18px 1fr auto auto;
+  gap: 8px; align-items: start; padding: 7px 8px;
+  border: 1px solid transparent; border-radius: 6px;
+  cursor: pointer; transition: all .15s; margin-bottom: 3px;
+}
+.product-item:hover { border-color: var(--border); background: rgba(200,150,46,0.05); }
+.product-item.selected { border-color: var(--brown); background: #FDF5E8; }
+.product-item input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--brown); margin-top: 2px; cursor: pointer; }
+.p-info .p-name { font-size: 12px; font-weight: 500; color: var(--dark); }
+.p-info .p-spec { font-size: 10px; color: var(--gray); }
+.p-price { font-size: 11px; color: var(--brown); font-weight: 500; white-space: nowrap; }
+.p-qty-col { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+.p-qty-col input { width: 52px; padding: 3px 6px; font-size: 12px; text-align: center; }
+.p-qty-col .disc-input { font-size: 10px; }
+.qty-label { font-size: 9px; color: var(--gray); text-align: right; }
+
+/* DISCOUNT & SHIPPING */
+.option-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+.option-btn {
+  padding: 8px 6px; border: 1.5px solid var(--border);
+  border-radius: 6px; background: white; cursor: pointer;
+  text-align: center; font-size: 12px; color: var(--dark);
+  transition: all .15s;
+}
+.option-btn:hover { border-color: var(--gold); }
+.option-btn.active { border-color: var(--brown); background: #FDF5E8; color: var(--brown); font-weight: 500; }
+
+/* BUTTONS */
+.btn-preview {
+  width: 100%; padding: 12px; background: var(--cream-dark);
+  color: var(--brown); border: 1.5px solid var(--brown);
+  border-radius: 8px; cursor: pointer; font-size: 14px;
+  font-family: 'Noto Serif TC', serif; letter-spacing: 1px;
+  margin-bottom: 8px; transition: all .2s;
+}
+.btn-preview:hover { background: var(--brown); color: var(--cream); }
+.btn-submit {
+  width: 100%; padding: 12px; background: var(--green);
+  color: white; border: none; border-radius: 8px; cursor: pointer;
+  font-size: 14px; font-family: 'Noto Serif TC', serif;
+  letter-spacing: 1px; margin-bottom: 8px; transition: background .2s;
+}
+.btn-submit:hover { background: #0F3A1A; }
+.btn-submit:disabled { background: var(--gray); cursor: not-allowed; }
+.btn-download {
+  width: 100%; padding: 10px; background: var(--gold);
+  color: var(--dark); border: none; border-radius: 8px; cursor: pointer;
+  font-size: 13px; font-family: 'Noto Sans TC', sans-serif;
+  margin-bottom: 8px; font-weight: 500; transition: background .2s;
+}
+.btn-download:hover { background: var(--gold-light); }
+.btn-new {
+  width: 100%; padding: 10px; background: transparent;
+  color: var(--gray); border: 1px dashed var(--border);
+  border-radius: 8px; cursor: pointer; font-size: 13px;
+  transition: all .2s;
+}
+.btn-new:hover { border-color: var(--brown); color: var(--brown); }
+.submit-status { font-size: 12px; text-align: center; min-height: 18px; margin-bottom: 4px; }
+
+/* ── RIGHT PANEL (PREVIEW) ── */
+.right-panel {
+  background: #E8E0D4;
+  overflow-y: visible;
+  padding: 12px;
+  display: flex; flex-direction: column; align-items: center;
+}
+@media(max-width:900px) { .right-panel { max-height: none; padding: 10px; } }
+.preview-label { font-size: 11px; color: var(--gray); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
+
+/* ORDER DOCUMENT */
+#order-doc {
+  background: white;
+  width: 100%; max-width: 560px;
+  padding: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  border-radius: 2px;
+  font-size: 10px;
+}
+@media(max-width:900px) { #order-doc { padding: 12px; font-size: 9px; } }
+.doc-header { display: grid; grid-template-columns: 1fr auto; align-items: flex-start; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid var(--brown); }
+.doc-brand { font-family: 'Noto Serif TC', serif; font-size: 15px; font-weight: 700; color: var(--dark); letter-spacing: 2px; }
+.doc-brand-en { font-size: 10px; color: var(--gray); letter-spacing: 3px; margin-top: 2px; }
+.doc-title { font-family: 'Noto Serif TC', serif; font-size: 13px; font-weight: 600; color: var(--brown); letter-spacing: 3px; text-align: right; }
+.doc-no { font-size: 11px; color: var(--gray); text-align: right; margin-top: 4px; }
+
+.doc-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); font-size: 10px; }
+.doc-meta-row { display: flex; gap: 6px; }
+.doc-meta-key { color: var(--gray); white-space: nowrap; min-width: 70px; }
+.doc-meta-val { font-weight: 500; color: var(--dark); }
+
+table.doc-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 12px; }
+.doc-table th { background: var(--brown); color: white; padding: 5px 6px; font-family: 'Noto Serif TC', serif; font-weight: 500; letter-spacing: 1px; text-align: center; font-size: 10px; }
+.doc-table th:first-child { text-align: left; }
+.doc-table td { padding: 4px 6px; border-bottom: 1px solid #EEE; font-size: 10px; }
+.doc-table td.c { text-align: center; }
+.doc-table td.r { text-align: right; }
+.doc-table tr:nth-child(even) td { background: #FAFAFA; }
+.doc-table .cat-row td { background: #F0E8D8 !important; font-weight: 600; color: var(--brown); font-size: 10px; letter-spacing: 1px; padding: 4px 8px; }
+
+.doc-totals { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; padding: 8px 0; border-top: 1px solid var(--border); margin-bottom: 10px; font-size: 10px; }
+.doc-total-row { display: flex; gap: 24px; color: var(--gray); }
+.doc-total-row.final { font-size: 12px; font-weight: 700; color: var(--brown); font-family: 'Noto Serif TC', serif; padding-top: 4px; border-top: 1px solid var(--border); }
+
+.doc-remark { background: #FDF5E8; border-left: 3px solid var(--brown); padding: 6px 10px; font-size: 10px; margin-bottom: 10px; border-radius: 0 4px 4px 0; }
+.doc-bank { border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; font-size: 10px; }
+.doc-bank-title { font-family: 'Noto Serif TC', serif; font-weight: 600; color: var(--brown); margin-bottom: 6px; letter-spacing: 1px; font-size: 12px; }
+.doc-bank-grid { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; }
+.doc-bank-key { color: var(--gray); }
+.doc-bank-val { font-weight: 500; }
+.doc-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 9px; color: var(--gray); text-align: center; }
+.empty-hint { color: var(--gray); text-align: center; padding: 40px 0; font-size: 13px; }
+
+/* tag */
+.tag-sample { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 3px; background: #FDF0E0; color: var(--gold); border: 1px solid var(--gold); margin-left: 4px; }
+.tag-raw { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 3px; background: #EEF5EE; color: var(--green); border: 1px solid var(--green); margin-left: 4px; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <div>
+      <div class="brand-name">佩森肉舖</div>
+      <div class="brand-sub">PESIN PREMIUM MEATS</div>
+    </div>
+  </div>
+  <div class="header-badge">訂購單系統 v2</div>
+</header>
+
+<div class="app-body">
+  <!-- LEFT -->
+  <div class="left-panel">
+
+    <!-- 業務選擇 -->
+    <div class="section">
+      <div class="section-title">負責業務</div>
+      <div class="sales-grid">
+        <div class="sales-btn active" onclick="selectSales('LL','劉芳妤',this)">
+          <div class="code">LL</div>
+          <div class="name">Lillian Liu</div>
+        </div>
+        <div class="sales-btn" onclick="selectSales('VP','Victor Pesin',this)">
+          <div class="code">VP</div>
+          <div class="name">Victor Pesin</div>
+        </div>
+        <div class="sales-btn" onclick="selectSales('AS','Adriana Sung',this)">
+          <div class="code">AS</div>
+          <div class="name">Adriana Sung</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 訂單資訊 -->
+    <div class="section">
+      <div class="section-title">訂單資訊</div>
+      <div class="form-row">
+        <div><label>訂單編號</label><input type="text" id="f-no" readonly style="background:#F5F0E8;color:var(--brown);font-weight:500"></div>
+        <div><label>出貨日期</label><input type="date" id="f-date"></div>
+      </div>
+    </div>
+
+    <!-- 客戶資料 -->
+    <div class="section">
+      <div class="section-title">客戶資料</div>
+      <div class="form-row full" style="margin-bottom:10px">
+        <div>
+          <label>選擇客戶</label>
+          <select id="f-client" onchange="fillClient()">
+            <option value="">— 選擇客戶或手動填寫 —</option>
+          </select>
+          <div class="client-loading" id="client-loading">載入客戶清單中...</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div><label>公司名稱</label><input type="text" id="f-company" placeholder="公司名稱"></div>
+        <div><label>統編</label><input type="text" id="f-taxid" placeholder="統一編號"></div>
+      </div>
+      <div class="form-row">
+        <div><label>聯絡人</label><input type="text" id="f-contact" placeholder="聯絡人姓名"></div>
+        <div><label>電話</label><input type="text" id="f-phone" placeholder="電話"></div>
+      </div>
+      <div class="form-row full">
+        <div><label>地址</label><input type="text" id="f-address" placeholder="出貨地址"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Email</label><input type="text" id="f-email" placeholder="Email"></div>
+        <div><label>付款方式</label>
+          <select id="f-payment">
+            <option value="現結">現結</option>
+            <option value="月結">月結</option>
+            <option value="預付">預付</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div><label>備註</label><textarea id="f-remark" placeholder="特殊要求、樣品說明、出貨注意事項..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- 商品選擇 -->
+    <div class="section">
+      <div class="section-title">商品選擇</div>
+      <div class="product-search">
+        <input type="text" id="product-search" placeholder="🔍 搜尋品項..." oninput="filterProducts()">
+      </div>
+      <div class="product-list" id="product-list"></div>
+    </div>
+
+    <!-- 運費 -->
+    <div class="section">
+      <div class="section-title">運費</div>
+      <div class="option-grid">
+        <div class="option-btn active" onclick="selectShipping('0','免運費',this)">免運費</div>
+        <div class="option-btn" onclick="selectShipping('290','NT$290',this)">NT$290</div>
+        <div class="option-btn" onclick="selectShipping('cod','運費到付',this)">運費到付</div>
+      </div>
+    </div>
+
+    <!-- 折扣 -->
+    <div class="section">
+      <div class="section-title">整單折扣</div>
+      <div class="form-row">
+        <div><label>折扣 %（無折扣填 100）</label><input type="number" id="f-disc-pct" value="100" min="0" max="100" step="0.5" onchange="updatePreview()"></div>
+        <div><label>折抵金額 NT$</label><input type="number" id="f-disc-amt" value="0" min="0" onchange="updatePreview()"></div>
+      </div>
+    </div>
+
+    <!-- 操作按鈕 -->
+    <div class="section">
+      <button class="btn-preview" onclick="updatePreview()">🔄 更新預覽</button>
+      <div class="submit-status" id="submit-status"></div>
+      <button class="btn-submit" id="submit-btn" onclick="submitOrder()">📤 送出訂單</button>
+      <button class="btn-download" onclick="downloadImage()">📷 下載圖片傳 LINE</button>
+      <button class="btn-new" onclick="newOrder()">🆕 新增下一張訂單</button>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: PREVIEW -->
+  <div class="right-panel">
+    <div class="preview-label" style="display:flex;align-items:center;justify-content:space-between;width:100%;max-width:680px"><span>訂購單預覽</span><button onclick="updatePreview()" style="font-size:11px;padding:4px 10px;border:1px solid var(--brown);background:transparent;color:var(--brown);border-radius:4px;cursor:pointer">更新</button></div>
+    <div id="order-doc">
+      <p class="empty-hint">填寫左側資料後點「更新預覽」</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+const WEBHOOK_URL = 'https://hook.eu1.make.com/dehy0ofp2avbgblh76pkuj9sggg3lt82';
+const SHEETS_ID = '1t3fM2GBDAv4ZbfsNPcX38JpHDX7o__xB3l2fZCizqLw';
+const CLIENT_WEBHOOK = 'https://script.google.com/macros/s/AKfycbx7ixr3Dm2yrGvkhgxBvIviPsZcNLRQkQ6is2Q3XfnbLZ7CK4ETY4-EL6GYIn6TGkO5Uw/exec';
+
+// ── STATE ──
+let currentSales = { code: 'LL', name: '劉芳妤 Lillian Liu' };
+let currentShipping = { val: '0', label: '免運費' };
+let clients = [];
+
+// ── PRODUCTS ──
+const PRODUCTS = [
+  { id:'HP0222306', cat:'梅花豬', name:'梅花豬 火鍋肉片', spec:'0.2cm / 250g', price:250, type:'pkg' },
+  { id:'GR0422306', cat:'梅花豬', name:'梅花豬 燒烤肉片', spec:'0.4cm / 250g', price:250, type:'pkg' },
+  { id:'SK2522306', cat:'梅花豬', name:'梅花豬 厚切', spec:'2.5cm / 400g', price:400, type:'pkg' },
+  { id:'SK6-306', cat:'梅花豬', name:'梅花豬 厚切 樣品', spec:'6cm', price:0, type:'sample' },
+  { id:'HP0222307', cat:'里肌豬', name:'里肌豬 火鍋肉片', spec:'0.2cm / 250g', price:235, type:'pkg' },
+  { id:'GR0422307', cat:'里肌豬', name:'里肌豬 燒烤肉片', spec:'0.4cm / 250g', price:235, type:'pkg' },
+  { id:'SK2022307', cat:'里肌豬', name:'里肌豬 厚切', spec:'2cm / 500g', price:440, type:'pkg' },
+  { id:'SK6-307', cat:'里肌豬', name:'里肌豬 厚切 樣品', spec:'6cm', price:0, type:'sample' },
+  { id:'HP0222314', cat:'豬五花', name:'豬五花 火鍋肉片', spec:'0.2cm / 250g', price:240, type:'pkg' },
+  { id:'GR1522314', cat:'豬五花', name:'豬五花 燒烤厚切', spec:'1.5cm / 240g', price:230, type:'pkg' },
+  { id:'SK6-314', cat:'豬五花', name:'豬五花 厚切 樣品', spec:'6cm', price:0, type:'sample' },
+  { id:'SK4022309-500', cat:'前腿肉', name:'前腿肉 厚切', spec:'4cm / 500g', price:375, type:'pkg' },
+  { id:'SK1522309-240', cat:'前腿肉', name:'前腿肉 排餐', spec:'1.5cm / 240g', price:180, type:'pkg' },
+  { id:'SK1522309-300', cat:'前腿肉', name:'前腿肉 排餐', spec:'1.5cm / 300g', price:225, type:'pkg' },
+  { id:'SK1522309-370', cat:'前腿肉', name:'前腿肉 排餐', spec:'1.5cm / 370g', price:278, type:'pkg' },
+  { id:'SK1522309-oth', cat:'前腿肉', name:'前腿肉 排餐（規格洽業務）', spec:'1.5cm / 規格洽業務', price:null, type:'pkg' },
+  { id:'SL5022704', cat:'聖路易肋排', name:'聖路易肋排', spec:'450g', price:405, type:'pkg' },
+  { id:'SL6022704', cat:'聖路易肋排', name:'聖路易肋排', spec:'570g', price:515, type:'pkg' },
+  { id:'SL7022704', cat:'聖路易肋排', name:'聖路易肋排', spec:'700g', price:630, type:'pkg' },
+  { id:'SL-samp', cat:'聖路易肋排', name:'聖路易肋排 樣品', spec:'規格洽業務', price:0, type:'sample' },
+  { id:'SR1022310', cat:'肩胛排', name:'肩胛排', spec:'1cm / 270g', price:195, type:'pkg' },
+  { id:'SR-samp', cat:'肩胛排', name:'肩胛排 樣品', spec:'規格洽業務', price:0, type:'sample' },
+  { id:'22315', cat:'松阪豬', name:'松阪豬', spec:'規格洽業務', price:null, type:'pkg' },
+  { id:'SCF22306', cat:'原塊原料', name:'純淨豬梅花 原塊', spec:'每塊約2.25kg，4塊/箱', price:387, type:'raw', unit:'kg' },
+  { id:'SCF22307', cat:'原塊原料', name:'純淨豬里肌 原塊', spec:'每塊約3.5kg，2塊/箱', price:457, type:'raw', unit:'kg' },
+  { id:'SCF22314', cat:'原塊原料', name:'純淨豬五花 原塊', spec:'每塊約5.5kg，2塊/箱', price:443, type:'raw', unit:'kg' },
+  { id:'SCF22309', cat:'原塊原料', name:'純淨豬前腿 原塊', spec:'每塊約3.9kg，4塊/箱', price:222, type:'raw', unit:'kg' },
+  { id:'SCF22310', cat:'原塊原料', name:'純淨豬肩胛排 原塊', spec:'每塊約0.5kg，6包/箱', price:295, type:'raw', unit:'kg' },
+  { id:'SCF22704', cat:'原塊原料', name:'純淨豬聖路易肋排 原塊', spec:'每塊約1kg，12包/箱', price:515, type:'raw', unit:'kg' },
+];
+
+// ── INIT ──
+document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+generateOrderNo();
+renderProducts();
+loadClients();
+
+// ── SALES ──
+function selectSales(code, name, el) {
+  document.querySelectorAll('.sales-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  currentSales = { code, name };
+  generateOrderNo();
+  const salesInput = document.getElementById('f-sales');
+  if(salesInput) salesInput.value = name;
+}
+
+// ── ORDER NO ──
+function generateOrderNo() {
+  const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const key = `pesin_seq_${currentSales.code}_${today}`;
+  const seq = parseInt(localStorage.getItem(key) || '0') + 1;
+  localStorage.setItem(key, seq);
+  document.getElementById('f-no').value = `PS-${today}-${currentSales.code}${String(seq).padStart(3,'0')}`;
+}
+
+// ── SHIPPING ──
+function selectShipping(val, label, el) {
+  document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  currentShipping = { val, label };
+  updatePreview();
+}
+
+// ── LOAD CLIENTS FROM GOOGLE SHEETS CSV ──
+async function loadClients() {
+  try {
+    const res = await fetch(CLIENT_WEBHOOK);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    clients = Array.isArray(data) ? data.filter(c => c['公司名稱']) : [];
+    const sel = document.getElementById('f-client');
+    clients.forEach((c, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = c['公司名稱'] || `客戶${i+1}`;
+      sel.appendChild(opt);
+    });
+    document.getElementById('client-loading').textContent = 
+      clients.length > 0 ? `✓ 已載入 ${clients.length} 位客戶` : '無客戶資料，請手動填寫';
+  } catch(e) {
+    console.error('客戶清單載入失敗:', e);
+    document.getElementById('client-loading').textContent = '客戶清單載入失敗，請手動填寫';
+  }
+}
+
+function fillClient() {
+  const idx = document.getElementById('f-client').value;
+  if (idx === '') return;
+  const c = clients[parseInt(idx)];
+  if (!c) return;
+  document.getElementById('f-company').value = c['公司名稱'] || '';
+  document.getElementById('f-contact').value = c['聯絡人'] || '';
+  document.getElementById('f-phone').value = c['電話'] || '';
+  document.getElementById('f-taxid').value = c['統編'] || '';
+  document.getElementById('f-email').value = c['Email'] || '';
+  document.getElementById('f-address').value = c['地址'] || '';
+  const payment = c['付款方式'] || '';
+  if (payment) {
+    const sel = document.getElementById('f-payment');
+    for (let opt of sel.options) {
+      if (opt.value === payment) { sel.value = payment; break; }
+    }
+  }
+}
+
+// ── PRODUCTS ──
+function renderProducts(filter='') {
+  const cats = [...new Set(PRODUCTS.map(p => p.cat))];
+  let html = '';
+  cats.forEach(cat => {
+    const items = PRODUCTS.filter(p => p.cat === cat && (!filter || p.name.includes(filter) || p.spec.includes(filter)));
+    if (!items.length) return;
+    html += `<div class="cat-label">${cat}</div>`;
+    items.forEach(p => {
+      const priceStr = p.type === 'sample' ? '<span style="color:var(--gold);font-size:10px">贈品</span>' : p.price ? `NT$${p.price}` : '洽業務';
+      const unit = p.type === 'raw' ? 'kg' : '包';
+      const discField = p.type !== 'sample' ? `<input type="number" id="disc-${p.id}" placeholder="折抵" style="width:52px;font-size:10px" class="disc-input" onchange="updatePreview()" onclick="event.stopPropagation()">` : '';
+      html += `
+        <div class="product-item" id="pi-${p.id}" onclick="toggleProduct('${p.id}')">
+          <input type="checkbox" id="chk-${p.id}" onclick="event.stopPropagation();toggleProduct('${p.id}')">
+          <div class="p-info">
+            <div class="p-name">${p.name}</div>
+            <div class="p-spec">${p.spec}</div>
+          </div>
+          <div class="p-price">${priceStr}${p.type === 'raw' ? '/kg' : ''}</div>
+          <div class="p-qty-col" id="qty-wrap-${p.id}" style="display:none" onclick="event.stopPropagation()">
+            <div class="qty-label">${unit}</div>
+            <input type="number" id="qty-${p.id}" value="1" min="${p.type==='raw'?0.1:1}" step="${p.type==='raw'?0.1:1}" style="width:52px;font-size:12px;text-align:center" onchange="updatePreview()">
+            ${discField}
+          </div>
+        </div>`;
+    });
+  });
+  document.getElementById('product-list').innerHTML = html || '<div style="color:var(--gray);font-size:12px;padding:12px">找不到符合的品項</div>';
+}
+
+function filterProducts() {
+  const f = document.getElementById('product-search').value;
+  renderProducts(f);
+}
+
+function toggleProduct(id) {
+  const chk = document.getElementById('chk-'+id);
+  const item = document.getElementById('pi-'+id);
+  const wrap = document.getElementById('qty-wrap-'+id);
+  chk.checked = !chk.checked;
+  item.classList.toggle('selected', chk.checked);
+  wrap.style.display = chk.checked ? 'flex' : 'none';
+  updatePreview();
+}
+
+function getSelected() {
+  return PRODUCTS.filter(p => {
+    const chk = document.getElementById('chk-'+p.id);
+    return chk && chk.checked;
+  }).map(p => {
+    if (p.type === 'sample') {
+      const qty = parseInt(document.getElementById('qty-'+p.id)?.value) || 1;
+      return { ...p, qty, unitPrice: 0, itemDisc: 0, subtotal: 0, displayQty: qty+'包' };
+    } else if (p.type === 'raw') {
+      const qty = parseFloat(document.getElementById('qty-'+p.id)?.value) || 0;
+      const itemDisc = parseFloat(document.getElementById('disc-'+p.id)?.value) || 0;
+      const manualAmt = parseFloat(document.getElementById('rawamt-'+p.id)?.value) || (qty * (p.price||0));
+      const subtotal = Math.max(0, manualAmt - itemDisc);
+      return { ...p, qty, unitPrice: p.price||0, itemDisc, subtotal, displayQty: qty+'kg' };
+    } else {
+      const qty = parseInt(document.getElementById('qty-'+p.id)?.value) || 1;
+      const unitPrice = p.price || 0;
+      const itemDisc = parseFloat(document.getElementById('disc-'+p.id)?.value) || 0;
+      const subtotal = Math.max(0, unitPrice * qty - itemDisc);
+      return { ...p, qty, unitPrice, itemDisc, subtotal, displayQty: qty+'包' };
+    }
+  });
+}
+
+// ── LINE MESSAGE ──
+function buildLineMsg(items, total, discPct, discAmt) {
+  const date = document.getElementById('f-date').value;
+  const no = document.getElementById('f-no').value;
+  const company = document.getElementById('f-company').value;
+  const contact = document.getElementById('f-contact').value;
+  const remark = document.getElementById('f-remark').value;
+  const hasSample = items.some(p => p.type === 'sample');
+  const allSample = items.every(p => p.type === 'sample');
+
+  let msg = `📦 新訂單通知\n`;
+  msg += `----------------------\n`;
+  msg += `👤 客戶：${company}`;
+  if (contact) msg += ` 收件人：${contact}`;
+  msg += `\n`;
+  msg += `📋 單號：${no}\n`;
+  msg += `📅 出貨：${date}\n`;
+  if (remark) msg += `📝 備註：${remark}\n`;
+  if (hasSample) msg += allSample ? `⚠️ 樣品，不收運費，不收款\n` : `⚠️ 含樣品（樣品不收費）\n`;
+  msg += `----------------------\n訂購內容：\n`;
+  items.filter(p=>p.type==='pkg').forEach(p => { msg += `▪ ${p.name} ${p.spec} x ${p.qty} 包\n`; });
+  items.filter(p=>p.type==='raw').forEach(p => { msg += `▪ ${p.name} x ${p.qty} kg\n`; });
+  items.filter(p=>p.type==='sample').forEach(p => { msg += `▪ 【樣品】${p.name} ${p.spec} x ${p.qty} 包\n`; });
+  msg += `----------------------\n`;
+  const sv = currentShipping.val;
+  if (sv === 'cod') msg += `🚚 運費：到付\n`;
+  else if (sv === '290') msg += `🚚 運費：NT$290\n`;
+  else msg += `🚚 運費：免運費\n`;
+  if (!allSample) {
+    if (discPct !== 100) msg += `折扣：${discPct}%\n`;
+    if (discAmt > 0) msg += `折抵：NT$${discAmt.toLocaleString()}\n`;
+    msg += `💰 總金額：NT$${total.toLocaleString()}\n`;
+  }
+  msg += `請確認後出貨，謝謝！`;
+  return msg;
+}
+
+// ── PREVIEW ──
+function updatePreview() {
+  const no = document.getElementById('f-no').value;
+  const date = document.getElementById('f-date').value;
+  const company = document.getElementById('f-company').value;
+  const contact = document.getElementById('f-contact').value;
+  const address = document.getElementById('f-address').value;
+  const phone = document.getElementById('f-phone').value;
+  const email = document.getElementById('f-email').value;
+  const taxid = document.getElementById('f-taxid').value;
+  const payment = document.getElementById('f-payment').value;
+  const remark = document.getElementById('f-remark').value;
+  const discPct = parseFloat(document.getElementById('f-disc-pct').value) || 100;
+  const discAmt = parseFloat(document.getElementById('f-disc-amt').value) || 0;
+  const sv = currentShipping.val;
+  const shippingFee = sv === 'cod' ? 0 : parseFloat(sv) || 0;
+  const selected = getSelected();
+  const subtotalAll = selected.reduce((s,p) => s + p.subtotal, 0);
+  const total = Math.max(0, subtotalAll * discPct / 100 - discAmt + shippingFee);
+  const cats = [...new Set(selected.map(p => p.cat))];
+  const dateFormatted = date ? new Date(date).toLocaleDateString('zh-TW', {year:'numeric',month:'long',day:'numeric'}) : '___';
+
+  let tableRows = '';
+  if (!selected.length) {
+    tableRows = `<tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px">尚未選擇商品</td></tr>`;
+  } else {
+    cats.forEach(cat => {
+      tableRows += `<tr class="cat-row"><td colspan="6">${cat}</td></tr>`;
+      selected.filter(p => p.cat === cat).forEach(p => {
+        let priceStr, qtyStr, subtotalStr;
+        const discNote = p.itemDisc > 0 ? ` <small style="color:#aaa">(-${p.itemDisc})</small>` : '';
+        if (p.type === 'sample') {
+          priceStr = '贈品'; qtyStr = p.displayQty; subtotalStr = '—';
+        } else if (p.type === 'raw') {
+          priceStr = `NT$${p.unitPrice}/kg`; qtyStr = p.displayQty;
+          subtotalStr = p.subtotal > 0 ? `NT$${p.subtotal.toLocaleString()}${discNote}` : '待確認';
+        } else {
+          priceStr = p.price ? `NT$${p.price.toLocaleString()}` : '洽業務';
+          qtyStr = p.displayQty;
+          subtotalStr = p.price ? `NT$${p.subtotal.toLocaleString()}${discNote}` : '—';
+        }
+        const typeTag = p.type === 'sample' ? '<span class="tag-sample">樣品</span>' : p.type === 'raw' ? '<span class="tag-raw">原塊</span>' : '';
+        tableRows += `<tr>
+          <td>${p.id}</td>
+          <td>${p.name}${typeTag}</td>
+          <td>${p.spec}</td>
+          <td class="c">${priceStr}</td>
+          <td class="c">${qtyStr}</td>
+          <td class="r">${subtotalStr}</td>
+        </tr>`;
+      });
+    });
+  }
+
+  let discHtml = '';
+  if (discPct !== 100) discHtml += `<div class="doc-total-row"><span>折扣（${discPct}%）</span><span>-NT$${(subtotalAll*(1-discPct/100)).toFixed(0)}</span></div>`;
+  if (discAmt > 0) discHtml += `<div class="doc-total-row"><span>折抵金額</span><span>-NT$${discAmt.toLocaleString()}</span></div>`;
+  const shippingLabel = sv === 'cod' ? '運費到付' : sv === '0' ? '免運費' : 'NT$290';
+  const totalStr = sv === 'cod' ? `NT$${Math.max(0, subtotalAll * discPct/100 - discAmt).toLocaleString()} + 運費到付` : `NT$${total.toLocaleString()}`;
+
+  document.getElementById('order-doc').innerHTML = `
+    <div class="doc-header">
+      <div>
+        <div class="doc-brand">佩森肉舖</div>
+        <div class="doc-brand-en">PESIN PREMIUM MEATS</div>
+      </div>
+      <div>
+        <div class="doc-title">訂 購 單</div>
+        <div class="doc-no">No. ${no || '___'}</div>
+      </div>
+    </div>
+    <div class="doc-meta">
+      <div class="doc-meta-row"><span class="doc-meta-key">日期：</span><span class="doc-meta-val">${dateFormatted}</span></div>
+      <div class="doc-meta-row"><span class="doc-meta-key">公司：</span><span class="doc-meta-val">${company || '___'}</span></div>
+      <div class="doc-meta-row"><span class="doc-meta-key">統編：</span><span class="doc-meta-val">${taxid || '___'}</span></div>
+      <div class="doc-meta-row"><span class="doc-meta-key">聯絡人：</span><span class="doc-meta-val">${contact || '___'}</span></div>
+      <div class="doc-meta-row"><span class="doc-meta-key">電話：</span><span class="doc-meta-val">02-6604-1161</span></div>
+      <div class="doc-meta-row"><span class="doc-meta-key">客戶電話：</span><span class="doc-meta-val">${phone || '___'}</span></div>
+      <div class="doc-meta-row"><span class="doc-meta-key">業務 Email：</span><span class="doc-meta-val">lillian@pesinmeats.com</span></div>
+      <div class="doc-meta-row"><span class="doc-meta-key">Email：</span><span class="doc-meta-val">${email || '___'}</span></div>
+      <div class="doc-meta-row"><span class="doc-meta-key">承辦業務：</span><span class="doc-meta-val">${currentSales.name}</span></div>
+      <div class="doc-meta-row"><span class="doc-meta-key">付款方式：</span><span class="doc-meta-val">${payment}</span></div>
+      <div class="doc-meta-row"><span class="doc-meta-key">地址：</span><span class="doc-meta-val">${address || '___'}</span></div>
+    </div>
+    <table class="doc-table">
+      <thead><tr>
+        <th style="width:90px">商品編號</th>
+        <th>品項名稱</th>
+        <th>產品規格</th>
+        <th style="width:75px">單項價格</th>
+        <th style="width:55px">數量</th>
+        <th style="width:85px">總價</th>
+      </tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+    <div class="doc-totals">
+      <div class="doc-total-row"><span>品項小計</span><span>NT$${subtotalAll.toLocaleString()}</span></div>
+      ${discHtml}
+      <div class="doc-total-row"><span>運費</span><span>${shippingLabel}</span></div>
+      <div class="doc-total-row final"><span>總金額</span><span>${totalStr}</span></div>
+    </div>
+    ${remark ? `<div class="doc-remark">備註：${remark}</div>` : ''}
+    <div class="doc-bank">
+      <div class="doc-bank-title">匯款資料</div>
+      <div class="doc-bank-grid">
+        <span class="doc-bank-key">戶名</span><span class="doc-bank-val">金泰全有限公司</span>
+        <span class="doc-bank-key">統編</span><span class="doc-bank-val">53580962</span>
+        <span class="doc-bank-key">銀行</span><span class="doc-bank-val">合作金庫（006）鳳松分行</span>
+        <span class="doc-bank-key">帳號</span><span class="doc-bank-val">5735717335897</span>
+      </div>
+    </div>
+    <div class="doc-footer">佩森肉舖｜PESIN Premium Meats｜02-6604-1161｜lillian@pesinmeats.com｜www.pesinmeats.com</div>
+  `;
+  return { selected, subtotalAll, total, discPct, discAmt };
+}
+
+// ── SUBMIT ──
+async function submitOrder() {
+  const { selected, subtotalAll, total, discPct, discAmt } = updatePreview();
+  if (!selected.length) { alert('請至少選擇一個商品'); return; }
+  const company = document.getElementById('f-company').value;
+  if (!company) { alert('請填寫公司名稱'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  const status = document.getElementById('submit-status');
+  btn.disabled = true; btn.textContent = '送出中...';
+  status.style.color = 'var(--gray)'; status.textContent = '傳送中...';
+
+  const payload = {
+    orderNo: document.getElementById('f-no').value,
+    date: document.getElementById('f-date').value,
+    company, taxid: document.getElementById('f-taxid').value,
+    contact: document.getElementById('f-contact').value,
+    address: document.getElementById('f-address').value,
+    phone: document.getElementById('f-phone').value,
+    email: document.getElementById('f-email').value,
+    payment: document.getElementById('f-payment').value,
+    sales: currentSales.name,
+    salesCode: currentSales.code,
+    remark: document.getElementById('f-remark').value,
+    shipping: currentShipping.label,
+    discountPct: discPct,
+    discountAmt: discAmt,
+    subtotal: subtotalAll,
+    total,
+    items: selected.map(p => ({ id:p.id, name:p.name, spec:p.spec, type:p.type, qty:p.qty, displayQty:p.displayQty, unitPrice:p.unitPrice, itemDisc:p.itemDisc, subtotal:p.subtotal })),
+    lineMessage: buildLineMsg(selected, total, discPct, discAmt),
+  };
+
+  try {
+    const res = await fetch(WEBHOOK_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if (res.ok || res.status === 200) {
+      btn.textContent = '✅ 送出成功！';
+      status.style.color = 'green';
+      status.textContent = `訂單 ${payload.orderNo} 已送出！`;
+      setTimeout(() => { btn.disabled = false; btn.textContent = '📤 送出訂單'; }, 4000);
+    } else throw new Error('HTTP '+res.status);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '📤 送出訂單';
+    status.style.color = 'red'; status.textContent = '送出失敗，請檢查網路後重試';
+  }
+}
+
+// ── DOWNLOAD ──
+async function downloadImage() {
+  const doc = document.getElementById('order-doc');
+  if (doc.querySelector('.empty-hint')) { alert('請先更新預覽'); return; }
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  document.head.appendChild(script);
+  script.onload = async () => {
+    const canvas = await html2canvas(doc, { scale:2, backgroundColor:'#ffffff', useCORS:true });
+    const link = document.createElement('a');
+    link.download = `佩森肉舖訂購單_${document.getElementById('f-no').value}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
+}
+
+// ── NEW ORDER ──
+function newOrder() {
+  if (!confirm('確定要清空表單，開始新的訂單？')) return;
+  document.getElementById('f-client').value = '';
+  document.getElementById('f-company').value = '';
+  document.getElementById('f-taxid').value = '';
+  document.getElementById('f-contact').value = '';
+  document.getElementById('f-phone').value = '';
+  document.getElementById('f-address').value = '';
+  document.getElementById('f-email').value = '';
+  document.getElementById('f-remark').value = '';
+  document.getElementById('f-payment').value = '現結';
+  document.getElementById('f-disc-pct').value = 100;
+  document.getElementById('f-disc-amt').value = 0;
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('submit-status').textContent = '';
+  // 取消勾選所有商品
+  PRODUCTS.forEach(p => {
+    const chk = document.getElementById('chk-'+p.id);
+    const item = document.getElementById('pi-'+p.id);
+    const wrap = document.getElementById('qty-wrap-'+p.id);
+    if(chk) { chk.checked = false; item?.classList.remove('selected'); if(wrap) wrap.style.display='none'; }
+  });
+  // 重設運費
+  document.querySelectorAll('.option-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+  currentShipping = { val:'0', label:'免運費' };
+  generateOrderNo();
+  document.getElementById('order-doc').innerHTML = '<p class="empty-hint">填寫左側資料後點「更新預覽」</p>';
+}
+
+updatePreview();
+</script>
+</body>
+</html>
