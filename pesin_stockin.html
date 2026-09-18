@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>佩森肉舖 入庫掃碼</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --dark: #1A0A00; --brown: #5C2D0A; --gold: #C8962E; --gold-light: #E8B84B;
+  --cream: #FAF5EC; --cream-dark: #F0E8D8; --border: #D4B896; --gray: #8A7A6A;
+  --green: #1A5C2A; --red: #8B1A1A; --white: #FFFFFF;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans TC', sans-serif; background: var(--dark); min-height: 100vh; color: var(--dark); }
+.app-header { background: linear-gradient(135deg, #1A0A00 0%, #3E1800 50%, #1A0A00 100%); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--gold); }
+.brand-name { font-family: 'Noto Serif TC', serif; font-size: 20px; font-weight: 700; color: var(--gold); letter-spacing: 3px; }
+.brand-sub { font-size: 10px; color: rgba(200,150,46,0.6); letter-spacing: 2px; }
+.header-badge { background: rgba(200,150,46,0.15); border: 1px solid var(--gold); border-radius: 4px; padding: 4px 12px; font-size: 11px; color: var(--gold); letter-spacing: 1px; }
+.counter { font-size: 12px; color: var(--gold-light); }
+
+.wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 60px; }
+
+.scan-box { background: var(--cream); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 2px solid var(--gold); }
+.scan-label { font-size: 12px; color: var(--brown); font-weight: 600; margin-bottom: 8px; letter-spacing: 1px; }
+#scan-input { width: 100%; padding: 16px; font-size: 18px; border: 2px solid var(--border); border-radius: 8px; text-align: center; font-family: monospace; background: white; outline: none; }
+#scan-input:focus { border-color: var(--gold); }
+.scan-hint { font-size: 11px; color: var(--gray); margin-top: 8px; text-align: center; }
+
+.manual-toggle { text-align: center; margin-bottom: 16px; }
+.manual-toggle button { background: transparent; border: 1px dashed var(--border); color: var(--gray); padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+.manual-toggle button:hover { border-color: var(--gold-light); color: var(--gold-light); }
+
+.card { background: var(--cream); border-radius: 12px; padding: 18px; margin-bottom: 16px; display: none; }
+.card.show { display: block; }
+.card-title { font-size: 13px; font-weight: 600; color: var(--brown); margin-bottom: 12px; letter-spacing: 1px; }
+.field { margin-bottom: 10px; }
+label { display: block; font-size: 11px; color: var(--gray); margin-bottom: 3px; font-weight: 500; }
+input, select { width: 100%; padding: 9px 10px; font-size: 14px; border: 1px solid var(--border); border-radius: 6px; background: white; font-family: 'Noto Sans TC', sans-serif; outline: none; }
+input:focus, select:focus { border-color: var(--gold); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.warn { background: #FDF0E0; border-left: 3px solid var(--gold); padding: 8px 10px; font-size: 12px; color: var(--brown); border-radius: 0 4px 4px 0; margin-bottom: 10px; }
+.err { background: #FDF0F0; border-left: 3px solid var(--red); padding: 8px 10px; font-size: 12px; color: var(--red); border-radius: 0 4px 4px 0; margin-bottom: 10px; }
+
+.btn-submit { width: 100%; padding: 13px; background: var(--green); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-family: 'Noto Serif TC', serif; letter-spacing: 1px; }
+.btn-submit:disabled { background: var(--gray); cursor: not-allowed; }
+.btn-cancel { width: 100%; padding: 10px; background: transparent; color: var(--gray); border: 1px dashed var(--border); border-radius: 8px; cursor: pointer; font-size: 13px; margin-top: 8px; }
+
+.log { margin-top: 20px; }
+.log-title { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; padding: 0 4px; }
+.log-item { background: rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 14px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+.log-item.ok { border-left: 3px solid var(--green); }
+.log-item.dup { border-left: 3px solid var(--gold); }
+.log-item.fail { border-left: 3px solid var(--red); }
+.log-main { color: white; font-size: 13px; }
+.log-sub { color: rgba(255,255,255,0.5); font-size: 11px; margin-top: 2px; }
+.log-status { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+.log-status.ok { background: rgba(26,92,42,0.3); color: #7FD98F; }
+.log-status.dup { background: rgba(200,150,46,0.3); color: var(--gold-light); }
+.log-status.fail { background: rgba(139,26,26,0.3); color: #E88; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div>
+    <div class="brand-name">佩森肉舖</div>
+    <div class="brand-sub">入庫 / 盤點掃碼</div>
+  </div>
+  <div class="counter" id="counter">本次已登錄 0 箱</div>
+</header>
+
+<div class="wrap">
+
+  <div class="scan-box">
+    <div class="scan-label">📷 請用掃碼槍掃描外箱條碼</div>
+    <input type="text" id="scan-input" placeholder="游標保持在這裡，直接掃碼即可" autocomplete="off" autofocus>
+    <div class="scan-hint">掃描後會自動解析；如果掃碼槍讀不到或條碼損毀，可以用下面「手動輸入」</div>
+  </div>
+
+  <div class="manual-toggle">
+    <button onclick="openManual()">✏️ 手動輸入這一箱</button>
+  </div>
+
+  <div class="card" id="confirm-card">
+    <div class="card-title" id="confirm-title">確認這一箱的資料</div>
+    <div id="confirm-warn"></div>
+    <div class="field">
+      <label>箱號（GTIN + 序號，自動組成，不建議手動改）</label>
+      <input type="text" id="f-boxno" readonly style="background:#F5F0E8;color:var(--brown);font-weight:500">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>GTIN</label>
+        <input type="text" id="f-gtin">
+      </div>
+      <div class="field">
+        <label>序號</label>
+        <input type="text" id="f-serial" oninput="rebuildBoxNo()">
+      </div>
+    </div>
+    <div class="field">
+      <label>對應品項（掃到沒建檔的GTIN時，先手動選一個，之後再請Lillian補建對照表）</label>
+      <select id="f-product" onchange="onProductChange()">
+        <option value="">— 請選擇品項 —</option>
+      </select>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>淨重（kg）</label>
+        <input type="number" id="f-weight" step="0.01" min="0">
+      </div>
+      <div class="field">
+        <label>包裝/入庫日期</label>
+        <input type="date" id="f-stockdate">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>批號（沒有可留空）</label>
+        <input type="text" id="f-lot">
+      </div>
+      <div class="field">
+        <label>效期（沒有可留空）</label>
+        <input type="date" id="f-expiry">
+      </div>
+    </div>
+    <div class="field">
+      <label>Invoice No.（進貨發票／出貨單號，方便之後對帳、進貨多了好找）</label>
+      <input type="text" id="f-invoice" placeholder="例如：INV-2026-0912">
+    </div>
+    <div class="field">
+      <label>用途</label>
+      <select id="f-purpose">
+        <option value="一般">一般</option>
+        <option value="樣品">樣品</option>
+        <option value="研發測試">研發測試</option>
+      </select>
+    </div>
+    <button class="btn-submit" id="submit-btn" onclick="submitStock()">✅ 確認登錄這一箱</button>
+    <button class="btn-cancel" onclick="closeCard()">取消，重新掃碼</button>
+  </div>
+
+  <div class="log">
+    <div class="log-title">本次登錄紀錄</div>
+    <div id="log-list"></div>
+  </div>
+
+</div>
+
+<script>
+// ── CONFIG ──
+// 跟訂單系統共用同一支 Apps Script 網頁應用程式，只是 action 不一樣（stockIn）。
+// 如果之後這支網址跟 index.html 不一樣，記得兩邊都要換。
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbykqn6za8c_sXR8plVZ-IrpAQKE_Py-s-bDxivkAZcKm20pLNpXlSLdVEjFILEfCoo8tg/exec';
+const CLIENT_WEBHOOK = WEBHOOK_URL; // 讀「商品」清單用同一支
+
+// 2026-09-17 更新：Lillian 傳了實際外箱條碼照片，照真實資料重寫這個解析器，取代原本「用正規表示式
+// 整串字亂找」的寫法。原本的寫法有個真實會踩到的地雷：如果 GTIN 的第一碼剛好是「1」（例如
+// 10076788223037），「01」+「1...」黏在一起就會意外形成一組「11」，害「11(\d{6})」誤把 GTIN
+// 裡面的數字當成包裝日期去解析，抓出完全錯誤的日期。改成「從字串開頭照順序一段一段往後吃」的寫法，
+// 每次只看「目前位置」是不是某個 AI 代碼開頭，不會再誤吃到別的欄位裡面的數字。
+//
+// 另外照三張實際照片核對出一個重要落差：條碼上 (3202) 這欄，數字對到的其實是標籤上的「Lb（磅）」，
+// 不是「Kg」——雖然 GS1 官方定義 3202 應該是公斤，但供應商（Independent Meat Co）印出來的條碼實際上
+// 塞的是磅數（例如 39.5 Lb → 條碼 003950 → 39.50，跟標籤上 17.93 Kg 對不起來，但跟 39.5 Lb 對得起來）。
+// 三箱都驗證過，所以這裡直接把 3202 解析出來的數字當「磅」，再乘 0.453592 轉成公斤存進系統，
+// 這樣「原始重量(kg)」欄位存的才會是跟標籤 Kg 一致的正確公斤數。
+// 條碼實際順序是 (01)(11)(3202)(21)，序號(21)在最後面，不是原本猜的在(3202)前面。
+function parseGS1(raw) {
+  const result = { gtin:'', prodDate:'', serial:'', weightKg:null, ok:false };
+  if (!raw) return result;
+  let s = raw.trim().replace(/[()\s]/g, ''); // 手動測試/貼上時常會帶括號跟空白，掃碼槍實際輸出不會有，先濾掉保險
+
+  let i = 0;
+
+  while (i < s.length) {
+    if (s.startsWith('01', i)) {
+      result.gtin = s.substr(i + 2, 14);
+      i += 2 + 14;
+    } else if (s.startsWith('11', i)) {
+      const d = s.substr(i + 2, 6);
+      const yy = d.slice(0, 2), mm = d.slice(2, 4), dd = d.slice(4, 6);
+      if (d.length === 6) result.prodDate = `20${yy}-${mm}-${dd}`;
+      i += 2 + 6;
+    } else if (s.startsWith('3202', i)) {
+      const w = s.substr(i + 4, 6);
+      if (w.length === 6) {
+        const lb = parseInt(w, 10) / 100;
+        result.weightKg = Math.round(lb * 0.453592 * 100) / 100; // 條碼裡存的是磅，轉成公斤
+      }
+      i += 4 + 6;
+    } else if (s.startsWith('21', i)) {
+      // 2026-09-18 修正真正的bug：序號是變動長度欄位，本來遇到「看起來像下一個已知AI代碼」的數字就會提早停止判斷序號結束，
+      // 結果序號本身如果剛好含有"01"這種數字組合（例如序號910166，中間就藏了01），就會被錯誤截斷成"91"，
+      // 剩下的"0166"又被誤判成又一組(01)把前面已經抓對的GTIN整個覆蓋掉——這就是箱號66-91那箱一直抓錯的真正原因，
+      // 不是掃碼機的問題。已確認這款供應商的標籤序號(21)一定是條碼最後一個欄位，後面不會再接別的AI代碼，
+      // 所以改成：遇到 GS 分隔字元(\x1D)或字串結束才停止，不要再用「像不像下一個AI代碼」去猜，才不會誤判。
+      let j = i + 2;
+      while (j < s.length && s[j] !== '\x1D') j++;
+      result.serial = s.slice(i + 2, j);
+      i = (s[j] === '\x1D') ? j + 1 : j;
+    } else {
+      i++; // 辨識不出來的字元跳過，避免卡在無窮迴圈
+    }
+  }
+
+  result.ok = !!(result.gtin && result.serial);
+  return result;
+}
+
+let PRODUCTS = [];
+let loggedCount = 0;
+let loggedBoxNos = new Set();
+let lastInvoiceNo = ''; // 2026-09-17 新增：同一批入庫通常是同一張 invoice，記住上一箱填的號碼自動帶入下一箱，不用每箱重打
+
+async function loadProducts() {
+  try {
+    const res = await fetch(CLIENT_WEBHOOK + '?action=products');
+    const data = await res.json();
+    PRODUCTS = Array.isArray(data) ? data.filter(p => p['商品編號']) : [];
+  } catch(e) {
+    console.error('商品清單載入失敗，仍可手動輸入品號', e);
+  }
+  const sel = document.getElementById('f-product');
+  PRODUCTS.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p['商品編號'];
+    opt.textContent = `${p['商品編號']} - ${p['商品名稱']}`;
+    opt.dataset.name = p['商品名稱'] || '';
+    sel.appendChild(opt);
+  });
+}
+loadProducts();
+
+function onProductChange() {
+  // 目前商品主檔還沒有GTIN對照欄位，先留給之後擴充；選了品項後畫面上不用再做別的事。
+}
+
+// 2026-09-17 新增：原塊肉供應商（Independent Meat Company）的GTIN組成是固定的
+// 「10076788」（8碼廠商前綴，固定不變）＋「5碼品項碼」（跟箱子上印的品號一樣，也是Lillian「SCF」品號後面那5碼）＋1碼檢查碼，共14碼。
+// 所以只要條碼掃出GTIN，忽略前綴跟檢查碼，把中間5碼抓出來、前面加上「SCF」，就能直接對到商品主檔，不用每次手動選。
+function matchProductByGtin(gtin) {
+  if (!gtin || gtin.length !== 14) return null;
+  const code5 = gtin.substring(8, 13); // 跳過8碼廠商前綴，取中間5碼品項碼（最後1碼是檢查碼，不用）
+  const targetId = 'SCF' + code5;
+  return PRODUCTS.find(p => p['商品編號'] === targetId) || null;
+}
+
+function rebuildBoxNo() {
+  const gtin = document.getElementById('f-gtin').value.trim();
+  const serial = document.getElementById('f-serial').value.trim();
+  document.getElementById('f-boxno').value = gtin && serial ? `${gtin}-${serial}` : '';
+}
+
+function openManual() {
+  document.getElementById('confirm-title').textContent = '手動輸入這一箱';
+  document.getElementById('confirm-warn').innerHTML = '';
+  ['f-gtin','f-serial','f-weight','f-lot'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-product').value = '';
+  document.getElementById('f-stockdate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-expiry').value = '';
+  document.getElementById('f-purpose').value = '一般';
+  document.getElementById('f-invoice').value = lastInvoiceNo;
+  rebuildBoxNo();
+  document.getElementById('confirm-card').classList.add('show');
+}
+
+function closeCard() {
+  document.getElementById('confirm-card').classList.remove('show');
+  const input = document.getElementById('scan-input');
+  input.value = '';
+  input.focus();
+}
+
+// ── 掃碼輸入監聽：掃碼槍通常會在掃完後自動送出 Enter ──
+const scanInput = document.getElementById('scan-input');
+scanInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    handleScan(scanInput.value);
+  }
+});
+// 頁面任何地方點擊後都把焦點拉回掃碼輸入框，避免現場作業點到別的地方導致掃碼槍打字打到別處
+document.addEventListener('click', (e) => {
+  if (document.getElementById('confirm-card').classList.contains('show')) return;
+  setTimeout(() => scanInput.focus(), 50);
+});
+
+function handleScan(raw) {
+  if (!raw.trim()) return;
+  const parsed = parseGS1(raw);
+  document.getElementById('confirm-title').textContent = '確認這一箱的資料';
+
+  // 2026-09-18 新增：只要 GTIN 不是標準14碼（代表解析結果可疑，不管有沒有標記ok），
+  // 就把原始掃描內容顯示出來，方便截圖回報，不用再另外問「掃到的原始內容是什麼」
+  const gtinLooksOff = !parsed.gtin || parsed.gtin.length !== 14;
+  const rawDebugHtml = gtinLooksOff
+    ? `<div class="warn" style="margin-top:6px;">🔍 原始掃描內容（除錯用，看不懂可以忽略；需要協助時把這行截圖給我）：<br><code style="user-select:all;word-break:break-all;">${raw.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</code></div>`
+    : '';
+
+  if (!parsed.ok) {
+    document.getElementById('confirm-warn').innerHTML = `<div class="warn">⚠️ 這組條碼沒辦法完整解析（可能掃碼槍分隔字元跟預期的不一樣，或條碼本身格式不同），已盡量帶出讀到的內容，請手動補齊或修正下面欄位再送出。</div>` + rawDebugHtml;
+  } else if (loggedBoxNos.has(`${parsed.gtin}-${parsed.serial}`)) {
+    document.getElementById('confirm-warn').innerHTML = `<div class="warn">⚠️ 這個箱號本次作業已經登錄過一次了，確定要再送一次嗎？（後端也會擋重複箱號）</div>` + rawDebugHtml;
+  } else {
+    document.getElementById('confirm-warn').innerHTML = rawDebugHtml;
+  }
+
+  document.getElementById('f-gtin').value = parsed.gtin || '';
+  document.getElementById('f-serial').value = parsed.serial || '';
+  document.getElementById('f-weight').value = parsed.weightKg != null ? parsed.weightKg : '';
+  document.getElementById('f-stockdate').value = parsed.prodDate || new Date().toISOString().slice(0,10);
+  document.getElementById('f-lot').value = '';
+  document.getElementById('f-expiry').value = '';
+  document.getElementById('f-purpose').value = '一般';
+  document.getElementById('f-invoice').value = lastInvoiceNo;
+
+  // 2026-09-17 新增：先試著用GTIN自動比對品項（原塊肉SCF系列），比對不到才要她自己選
+  const matched = matchProductByGtin(parsed.gtin);
+  if (matched) {
+    document.getElementById('f-product').value = matched['商品編號'];
+  } else {
+    document.getElementById('f-product').value = '';
+    if (parsed.ok && !gtinLooksOff) {
+      document.getElementById('confirm-warn').innerHTML += `<div class="warn">ℹ️ 沒有自動比對到品項，請手動選擇（如果這是原塊肉，可能是商品主檔裡還沒建這個SCF品號）。</div>`;
+    }
+  }
+  rebuildBoxNo();
+
+  document.getElementById('confirm-card').classList.add('show');
+  scanInput.value = '';
+}
+
+async function submitStock() {
+  const boxNo = document.getElementById('f-boxno').value.trim();
+  const productSel = document.getElementById('f-product');
+  const productId = productSel.value;
+  const productName = productSel.selectedOptions[0] ? productSel.selectedOptions[0].dataset.name : '';
+  const weight = parseFloat(document.getElementById('f-weight').value) || 0;
+
+  if (!boxNo) { alert('箱號不能是空的（GTIN跟序號都要有）'); return; }
+  if (!productId) { alert('請選擇這一箱對應的品項'); return; }
+  if (!weight) { alert('請填淨重'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = '送出中...';
+
+  const invoiceNo = document.getElementById('f-invoice').value.trim();
+
+  const payload = {
+    action: 'stockIn',
+    boxNo,
+    productId,
+    productName,
+    weight,
+    stockInDate: document.getElementById('f-stockdate').value,
+    lot: document.getElementById('f-lot').value,
+    expiry: document.getElementById('f-expiry').value,
+    purpose: document.getElementById('f-purpose').value,
+    invoiceNo,
+  };
+
+  try {
+    const res = await fetch(WEBHOOK_URL, { method:'POST', body: JSON.stringify(payload) });
+    const result = await res.json().catch(() => ({ success: res.ok }));
+    if (result.success) {
+      lastInvoiceNo = invoiceNo; // 記住這次的invoice號碼，下一箱自動帶入
+      addLog('ok', boxNo, `${productId} ${productName} ・ ${weight}kg`);
+      loggedBoxNos.add(boxNo);
+      loggedCount++;
+      document.getElementById('counter').textContent = `本次已登錄 ${loggedCount} 箱`;
+    } else if (result.error === 'duplicate') {
+      addLog('dup', boxNo, result.message || '此箱號已存在，略過');
+    } else {
+      addLog('fail', boxNo, result.error || '寫入失敗，請重試或手動記在紙上');
+    }
+  } catch(e) {
+    addLog('fail', boxNo, '網路錯誤，請重試或手動記在紙上');
+  }
+
+  btn.disabled = false; btn.textContent = '✅ 確認登錄這一箱';
+  closeCard();
+}
+
+function addLog(status, boxNo, sub) {
+  const list = document.getElementById('log-list');
+  const div = document.createElement('div');
+  div.className = 'log-item ' + status;
+  const statusLabel = status === 'ok' ? '成功' : status === 'dup' ? '重複' : '失敗';
+  div.innerHTML = `<div><div class="log-main">${boxNo}</div><div class="log-sub">${sub}</div></div><div class="log-status ${status}">${statusLabel}</div>`;
+  list.insertBefore(div, list.firstChild);
+}
+
+scanInput.focus();
+</script>
+</body>
+</html>
