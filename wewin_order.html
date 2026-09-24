@@ -656,6 +656,7 @@ function buildLineMsg(items, total, discPct, discAmt) {
   const company = document.getElementById('f-company').value;
   const contact = document.getElementById('f-contact').value;
   const remark = document.getElementById('f-remark').value;
+  const address = document.getElementById('f-address').value;
   const isWarehouse = document.getElementById('f-warehouse').checked;
   const hasSample = items.some(p => p.type === 'sample');
   const allSample = items.every(p => p.type === 'sample');
@@ -667,6 +668,7 @@ function buildLineMsg(items, total, discPct, discAmt) {
   msg += `\n`;
   msg += `📋 單號：${no}\n`;
   msg += `📅 出貨：${date}\n`;
+  if (address) msg += `📍 地址：${address}\n`;
   if (isWarehouse) msg += `📦 寄倉訂單\n`;
   if (remark) msg += `📝 備註：${remark}\n`;
   if (hasSample) msg += allSample ? `⚠️ 樣品，不收運費，不收款\n` : `⚠️ 含樣品（樣品不收費）\n`;
